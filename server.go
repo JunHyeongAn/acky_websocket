@@ -13,7 +13,6 @@ func Run(path string, port string) {
 			fmt.Println(err)
 		}
 
-		// Handshake로 ws 연결유지
 		err = ws.Handshake()
 		if err != nil {
 			fmt.Println(err)
@@ -23,7 +22,6 @@ func Run(path string, port string) {
 			frame, err := ws.Recv()
 
 			if err != nil {
-				// 웹소켓에서 페이로드를 못받아옴
 				fmt.Println(err)
 				break
 			}
