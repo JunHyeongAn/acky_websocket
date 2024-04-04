@@ -6,8 +6,8 @@ import (
 	"net/http"
 )
 
-func Run() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+func Run(path string, port string) {
+	http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		ws, err := New(w, r)
 		if err != nil {
 			fmt.Println(err)
@@ -44,5 +44,5 @@ func Run() {
 
 	})
 
-	http.ListenAndServe(":5002", nil)
+	http.ListenAndServe(":"+port, nil)
 }
