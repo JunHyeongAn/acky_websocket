@@ -38,7 +38,14 @@ func New(w http.ResponseWriter, r *http.Request) (*Websocket, error) {
 		return nil, err
 	}
 
-	return &Websocket{conn, bufrw, r.Header}, nil
+	ws := Websocket{conn, bufrw, r.Header}
+	err = ws.handshake()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &ws, nil
 }
 
 func makeAcceptHash(key string) string {
@@ -48,7 +55,7 @@ func makeAcceptHash(key string) string {
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
 
-func (ws *Websocket) Handshake() error {
+func (ws *Websocket) handshake() error {
 	hash := makeAcceptHash(ws.header.Get("Sec-WebSocket-Key"))
 	lines := []string{
 		"HTTP/1.1 101 Web Socket Protocol Handshake",
@@ -102,38 +109,38 @@ func (ws *Websocket) Recv() (Frame, error) {
 		maskIndex = 6
 	}
 
-	frame.fin = head[0] & 0x80
-	frame.opcode = head[0] & 0x0F
-	frame.payloadLength = int(length)
-	frame.mask = head[maskIndex : maskIndex+4]
+	frame.Fin = head[0] & 0x80
+	frame.Opcode = head[0] & 0x0F
+	frame.PayloadLength = int(length)
+	frame.Mask = head[maskIndex : maskIndex+4]
 
-	frame.payload = head[maskIndex+4:]
+	frame.Payload = head[maskIndex+4:]
 
-	for i := 0; i < len(frame.payload); i++ {
-		frame.payload[i] ^= frame.mask[i%len(frame.mask)]
+	for i := 0; i < len(frame.Payload); i++ {
+		frame.Payload[i] ^= frame.Mask[i%len(frame.Mask)]
 	}
 	return frame, nil
 }
 
 func (ws *Websocket) Send(f Frame) error {
 	data := make([]byte, 2)
-	data[0] = 0x80 | f.opcode
+	data[0] = 0x80 | f.Opcode
 
-	if f.payloadLength <= 125 {
-		data[1] = byte(f.payloadLength)
-		data = append(data, f.payload...)
-	} else if f.payloadLength > 125 {
+	if f.PayloadLength <= 125 {
+		data[1] = byte(f.PayloadLength)
+		data = append(data, f.Payload...)
+	} else if f.PayloadLength > 125 {
 		data[1] = byte(126)
 		size := make([]byte, 2)
-		binary.BigEndian.PutUint16(size, uint16(f.payloadLength))
+		binary.BigEndian.PutUint16(size, uint16(f.PayloadLength))
 		data = append(data, size...)
-		data = append(data, f.payload...)
+		data = append(data, f.Payload...)
 	} else {
 		data[1] = byte(127)
 		size := make([]byte, 8)
-		binary.BigEndian.PutUint64(size, uint64(f.payloadLength))
+		binary.BigEndian.PutUint64(size, uint64(f.PayloadLength))
 		data = append(data, size...)
-		data = append(data, f.payload...)
+		data = append(data, f.Payload...)
 	}
 	fmt.Println(string(data))
 	return ws.write(data)

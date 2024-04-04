@@ -10,13 +10,13 @@ const (
 )
 
 type Frame struct {
-	fin           byte
-	opcode        byte
-	payloadLength int
-	mask          []byte
-	payload       []byte
+	Fin           byte
+	Opcode        byte
+	PayloadLength int
+	Mask          []byte
+	Payload       []byte
 }
 
 func (f Frame) Text() string {
-	return string(f.payload)
+	return string(f.Payload)
 }
